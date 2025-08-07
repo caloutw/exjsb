@@ -40,7 +40,7 @@ import { ExJSB } from 'exjsb';
 const exjsb = new ExJSB('./script.js', true);
 
 // 執行腳本
-exjs.execute();
+exjsb.execute();
 ```
 
 ``./script.js``
@@ -60,7 +60,7 @@ import { ExJSB } from 'exjsb';
 const exjsb = new ExJSB('./script.js', true);
 
 // 執行腳本
-exjs.execute();
+exjsb.execute();
 ```
 
 ``./script.js``
@@ -77,7 +77,7 @@ import { ExJSB } from 'exjsb';
 const exjsb = new ExJSB('./script.js', true);
 
 // 執行腳本
-exjs.execute();
+exjsb.execute();
 ```
 
 ``./script.js``
@@ -98,7 +98,7 @@ import { ExJSB } from 'exjsb';
 const exjsb = new ExJSB('./script.js', true);
 
 // 執行腳本
-exjs.execute();
+exjsb.execute();
 ```
 
 ``./script.js``
@@ -117,7 +117,7 @@ import { ExJSB } from 'exjsb';
 const exjsb = new ExJSB('./script.js', true);
 
 // 執行腳本(第一個參數必為錯誤callback)
-exjs.execute((err)=>console.log(err), "Hello", "World");
+exjsb.execute((err)=>console.log(err), "Hello", "World");
 ```
 
 ``./script.js``
@@ -136,10 +136,10 @@ import { ExJSB } from 'exjsb';
 const exjsb = new ExJSB('./script.js', true);
 
 // 有錯誤，則不會使程式整個停止
-exjs.execute((err)=>console.log(err));
+exjsb.execute((err)=>console.log(err));
 
 // 有錯誤，因為沒有callback，因此會終止整個主線程
-exjs.execute();
+exjsb.execute();
 ```
 
 ## 授權

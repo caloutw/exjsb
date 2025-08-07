@@ -5,16 +5,10 @@ import { fileURLToPath } from "node:url";
 import path, { dirname } from "node:path";
 import { createRequire } from "module";
 
-//who import me.
-const source_who = () => {
-    const source = new Error().stack.split('\n')[2].trim().match(/(file:\/\/\/[^:]*)/g)[0].replace("file:\/\/","");
-    return source;
-}
-
 //path setting.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const __sourcedir = dirname(source_who());
+const __sourcedir = dirname(process.argv[1]);
 
 //require.
 const require = createRequire(import.meta.url);
