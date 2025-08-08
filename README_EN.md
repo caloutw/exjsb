@@ -2,7 +2,7 @@
   <a href="README_EN.md">English</a> | <a href="README.md">繁體中文</a>
 </div>
 
-# ExJS
+# ExJSB
 
 A simple JavaScript execution sandbox that supports both Module and CommonJS.
 
@@ -25,7 +25,7 @@ It supports `import.meta.url` natively, so you can use `__dirname`.
 ## Installation
 
 ```bash
-npm install exjs-sandbox
+npm install exjsb
 ```
 
 ## Examples
@@ -34,13 +34,13 @@ npm install exjs-sandbox
 
 `./index.js`
 ```javascript
-import { ExJS } from 'exjs-sandbox';
+import { ExJSB } from 'exjsb';
 
-// Create an ExJS instance
-const exjs = new ExJS('./script.js', true);
+// Create an ExJSB instance
+const exjsb = new ExJSB('./script.js', true);
 
 // Execute the script
-exjs.execute();
+exjsb.execute();
 ```
 
 `./script.js`
@@ -54,13 +54,13 @@ export function main(){
 ### Without main function
 `./index.js`
 ```javascript
-import { ExJS } from 'exjs-sandbox';
+import { ExJSB } from 'exjsb';
 
-// Create an ExJS instance
-const exjs = new ExJS('./script.js', true);
+// Create an ExJSB instance
+const exjsb = new ExJSB('./script.js', true);
 
 // Execute the script
-exjs.execute();
+exjsb.execute();
 ```
 
 `./script.js`
@@ -71,13 +71,13 @@ console.log("Hi");
 ### Import objects
 `./index.js`
 ```javascript
-import { ExJS } from 'exjs-sandbox';
+import { ExJSB } from 'exjsb';
 
-// Create an ExJS instance
-const exjs = new ExJS('./script.js', true);
+// Create an ExJSB instance
+const exjsb = new ExJSB('./script.js', true);
 
 // Execute the script
-exjs.execute();
+exjsb.execute();
 ```
 
 `./script.js`
@@ -92,13 +92,13 @@ let os = await import("os");
 ### Require objects
 `./index.js`
 ```javascript
-import { ExJS } from 'exjs-sandbox';
+import { ExJSB } from 'exjsb';
 
-// Create an ExJS instance
-const exjs = new ExJS('./script.js', true);
+// Create an ExJSB instance
+const exjsb = new ExJSB('./script.js', true);
 
 // Execute the script
-exjs.execute();
+exjsb.execute();
 ```
 
 `./script.js`
@@ -111,13 +111,13 @@ console.log(fs);
 ### Passing parameters
 `./index.js`
 ```javascript
-import { ExJS } from 'exjs-sandbox';
+import { ExJSB } from 'exjsb';
 
-// Create an ExJS instance
-const exjs = new ExJS('./script.js', true);
+// Create an ExJSB instance
+const exjsb = new ExJSB('./script.js', true);
 
 // Execute the script (first parameter must be error callback)
-exjs.execute((err)=>console.log(err), "Hello", "World");
+exjsb.execute((err)=>console.log(err), "Hello", "World");
 ```
 
 `./script.js`
@@ -130,16 +130,16 @@ export function main(A, B){
 ### Error handling
 `./index.js`
 ```javascript
-import { ExJS } from 'exjs-sandbox';
+import { ExJSB } from 'exjsb';
 
-// Create an ExJS instance
-const exjs = new ExJS('./script.js', true);
+// Create an ExJSB instance
+const exjsb = new ExJSB('./script.js', true);
 
 // If there's an error, it won't stop the entire program
-exjs.execute((err)=>console.log(err));
+exjsb.execute((err)=>console.log(err));
 
 // If there's an error and no callback, it will terminate the entire main thread
-exjs.execute();
+exjsb.execute();
 ```
 
 ## License
