@@ -1,6 +1,6 @@
 {
   "name": "exjsb",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A simple JS execution sandbox with insulation mode for secure code execution",
   "license": "MIT",
   "author": "Caloutw",
@@ -16,12 +16,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/caloutw/exbox.git"
+    "url": "git+https://github.com/caloutw/exjsb.git"
   },
   "bugs": {
-    "url": "https://github.com/caloutw/exbox/issues"
+    "url": "https://github.com/caloutw/exjsb/issues"
   },
-  "homepage": "https://github.com/caloutw/exbox#readme",
+  "homepage": "https://github.com/caloutw/exjsb#readme",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
