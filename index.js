@@ -8,7 +8,6 @@ import { createRequire } from "module";
 //path setting.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const __sourcedir = dirname(process.argv[1]);
 
 //require.
 const require = createRequire(import.meta.url);
@@ -37,14 +36,14 @@ export class ExJSB {
         if (typeof filepath !== 'string')
             throw new Error('path must be a string.');
 
-        if (!fs.existsSync(path.join(__sourcedir, filepath)))
+        if (!fs.existsSync(filepath))
             throw new Error('file not exist.');
 
         //If insulation not a boolean. Throw error.
         if (typeof insulation !== "boolean")
-            throw new Error("insulation must be a boolean.")
+            throw new Error("insulation must be a boolean.");
 
-        this.filepath = (filepath.startsWith("/")) ? filepath : path.join(__sourcedir, filepath);
+        this.filepath = filepath;
         this.insulation = insulation;
 
         this.als = new AsyncLocalStorage();
