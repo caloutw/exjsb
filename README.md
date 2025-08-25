@@ -32,40 +32,44 @@ npm install exjsb
 ## Example
 
 ``./index.js``
-
 ```javascript
 import { ExJSB } from 'exjsb';
-import { fileURLToPath } from "node:url";
-import path, { dirname } from "node:path";
+import { fileURLToPath } from  "node:url";
+import path, { dirname } from  "node:path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Create an ExJSB instance, specify the path, and enable isolation mode
+//create a ExJSB Object, and open insulation mode.
 const exjsb = new ExJSB(path.join(__dirname, "script.js"), true);
 
-// Execute the script
-exjsb.execute((error)=>{
-    console.log(error)
-}, "Hi", "Hello", "javascript.");
+//initialization the vm.
+await exjsb.initialization((err) => {console.log(err)});
+
+//excute add function.
+let result = await exjsb.run((err) => {console.log(err)}, "add", 5, 8, 10);
+console.log(result); //23
+
+//remove the object
+exjsb.destory();
 ```
 
-``./script.js``
-
+``script.js``
 ```javascript
-import fs from "fs";
-const os = require("os");
-import { fileURLToPath } from "node:url";
-import path, { dirname } from "node:path";
+import fs from 'fs'; //Ok.
+const os = require("os"); //Ok.
+import { fileURLToPath } from  "node:url";
+import path, { dirname } from  "node:path";
 
-const __filename = fileURLToPath(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);  //Support.
 const __dirname = dirname(__filename);
 
-// Program main entry
-export function main(A, B, C){
-    console.log(A + " " + B + " " + C); // Hi Hello javascript.
-    console.log(os.cpus);
-    console.log(fs.readFileSync(path.join(__dirname, "mybook.txt"), "utf-8"));
+//export the add function.
+export function add(a, b, c){
+    console.log(__dirname);
+    console.log(fs);
+    console.log(os.cpus());
+    return a + b + c;
 }
 ```
 

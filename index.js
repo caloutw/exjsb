@@ -1,87 +1,53 @@
 import vm from 'vm';
 import fs from 'fs';
 import { AsyncLocalStorage } from "node:async_hooks";
-import { fileURLToPath } from "node:url";
-import path, { dirname } from "node:path";
 import { createRequire } from "module";
-
-//path setting.
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 //require.
 const require = createRequire(import.meta.url);
 
+//errorHandle
+let errorLogger = new AsyncLocalStorage();
+const errorHandle = ["uncaughtException", "unhandledRejection"];
+for (let i of errorHandle) {
+    const handler = (error) => {
+        const isVMError = errorLogger.getStore()?.code == "ExJSBError";
+        const errorCallback = errorLogger.getStore()?.callback;
+        if ((!isVMError || (isVMError && (errorCallback == undefined || typeof errorCallback !== 'function'))) && process.listenerCount(i) == 1) {
+            console.error(error);
+            process.exit(1);
+        }
+
+        if (isVMError && errorCallback !== undefined && typeof errorCallback === 'function') {
+            errorCallback(error);
+        }
+
+        return;
+    }
+    process.on(i, handler);
+}
+
 export class ExJSB {
-    /**
-     * ExJSB - A simple JS execution sandbox with "insulation" mode.
-     * 
-     * @param {string} path - Js file path.
-     * @param {boolean} [insulation=true] - If true, dangerous operations (such as process.exit, require, etc.) will be blocked.
-     * 
-     * Example:
-     *   let a = new ExJSB('process.exit(1);', true);
-     *   a.execute();
-     *   // process.exit(1) will be invalid, and the main program will NOT exit.
-     * 
-     * If insulation is false, the code can access all Node.js global objects (not recommended for untrusted code).
-     */
     constructor(filepath, insulation = true) {
-        // Check --experimental-vm-modules is opened. Throw error.
-        const hasExperimentalVMModules = process.execArgv.includes('--experimental-vm-modules');
-        if (!hasExperimentalVMModules)
-            throw new Error('must add the --experimental-vm-modules execution parameter.');
+        if (!process.execArgv.includes('--experimental-vm-modules'))
+            throw new Error('Must add the --experimental-vm-modules execution parameter.');
 
-        // If path is not a string. Throw error.
-        if (typeof filepath !== 'string')
-            throw new Error('path must be a string.');
+        if (!filepath)
+            throw new Error('filepath missing.');
 
-        if (!fs.existsSync(filepath))
+        if (!fs.existsSync(filepath) || typeof filepath !== "string")
             throw new Error('file not exist.');
 
-        //If insulation not a boolean. Throw error.
-        if (typeof insulation !== "boolean")
-            throw new Error("insulation must be a boolean.");
+        if (typeof insulation !== 'boolean')
+            insulation = true;
 
         this.filepath = filepath;
         this.insulation = insulation;
 
-        this.als = new AsyncLocalStorage();
+        this.sendbox = undefined;
     }
 
-    /**
-     * execute JS code on vm.
-     * @param {Function} callback - Error callback, if missing this, will throw error.
-     * @returns {boolean} - if success return true, otherwise return false.
-     */
-    execute() {
-        //get function parm arg
-        let param = Array.from(arguments).slice(1, arguments.length);
-        //get function callback arg
-        let callback = arguments[0];
-
-        //create a error listener
-        const errorHandle = ["uncaughtException", "unhandledRejection"];
-        for (let i of errorHandle) {
-            const handler = (error) => {
-                const isVMError = this.als.getStore()?.code == "ExJSBError";
-                if (isVMError && callback) {
-                    callback(error);
-                    process.removeListener(i, handler);
-                    return;
-                }
-
-                if (!isVMError && process.listenerCount(i) > 1)
-                    return;
-
-                console.error(error);
-                process.removeListener(i, handler);
-                process.exit(1);
-                return;
-            };
-            process.on(i, handler);
-        };
-
+    async initialization(errorCallback) {
         let cloneGlobal = () => {
             let cloned = Object.defineProperties(
                 { ...global },
@@ -97,52 +63,109 @@ export class ExJSB {
         };
 
         let context = vm.createContext(cloneGlobal());
-        
+
         let vm_CODE = fs.readFileSync(this.filepath, "utf-8");
 
-        const sendbox = new vm.SourceTextModule(vm_CODE, {
+        this.sendbox = new vm.SourceTextModule(vm_CODE, {
             context: context,
             identifier: this.filepath,
             initializeImportMeta(meta) { meta.url = `file://${this.filepath}`; },
             importModuleDynamically(specifier) { return import(specifier); }
         });
 
-        this.als.run({code: "ExJSBError"}, async () => {
-            await sendbox.link(async (specifier, referencingModule) => {
-                const target = await (async () => { try { return await import(specifier); } catch (e) { throw new Error(e); return false; } })();
-    
+        let result = errorLogger.run({
+            code: "ExJSBError",
+            callback: errorCallback
+        }, async () => {
+            await this.sendbox.link(async (specifier, referencingModule) => {
+                const target = await import(specifier);
+
                 if (!target) return false;
-    
+
                 const module_METHOD = (() => {
                     let support_List = [];
-    
+
                     if (target.default) support_List.push("default");
                     Object.keys(target).forEach((key) => {
                         if (key != "default") support_List.push(key);
                     });
-    
+
                     return support_List;
                 })();
-    
+
                 return new vm.SyntheticModule(
                     module_METHOD,
                     function () { for (let method of module_METHOD) this.setExport(method, target[method]); },
                     { context: referencingModule.context }
                 );
             });
-    
-            await sendbox.evaluate();
-    
-            if (sendbox.namespace.main) {
-                await sendbox.namespace.main(...param);
-            }
-    
+
+            await this.sendbox.evaluate();
+
             return true;
         });
+
+        return result;
+    }
+
+    async run(errorCallback, funcName) {
+        //get function parm arg
+        let param = Array.from(arguments).slice(2, arguments.length);
+        const execFunc = this.sendbox.namespace[funcName];
+
+        if (!execFunc)
+            throw new Error("Function name not exist.");
+        
+        let result =  await errorLogger.run({
+            code: "ExJSBError",
+            callback: errorCallback
+        }, async () => {
+            try {
+                return await execFunc(...param);
+            } catch (e) {
+                if(typeof errorCallback !== "function")
+                    throw new Error(e);
+                errorCallback(e);
+                return null;
+            }
+        });
+
+        return result ?? null;
+    }
+
+    destory(){
+        this.filepath = null;
+        this.insulation = null;
+        this.sendbox = null;
+
+        if(global.gc)
+            global.gc();
+
+        return true;
+    }
+
+    //舊架構支援
+    async execute() {
+        //get function parm arg
+        let param = Array.from(arguments).slice(1, arguments.length);
+        //get function callback arg
+        let callback = arguments[0];
+
+        if(!this.sendbox){
+            await this.initialization(callback);
+        }
+
+        if(this.sendbox.namespace["main"]){
+            return await this.run(callback, "main", ...param);
+        }
+
+        this.destory();
+
+        return true;
     }
 }
 
-// 兼容 CommonJS 匯出
+
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-  module.exports = { ExJSB };
+    module.exports = { ExJSB };
 }

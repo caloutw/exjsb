@@ -27,37 +27,79 @@ npm install  exjsb
 ## 範例
 ``./index.js``
 ```javascript
-import { ExJSB } from  'exjsb';
+import { ExJSB } from 'exjsb';
 import { fileURLToPath } from  "node:url";
 import path, { dirname } from  "node:path";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// 創建一個 ExJSB 實例，並且建立路徑，然後開啟隔離模式
+//創建一個ExJSB物件，並且開啟隔離模式
 const exjsb = new ExJSB(path.join(__dirname, "script.js"), true);
 
-// 執行腳本
-exjsb.execute((error)=>{
-	console.log(error)
-}, "Hi", "Hello", "javascript.");
-```
-``./script.js``
+//初始化VM
+await exjsb.initialization((err) => {console.log(err)});
 
+//執行add函數
+let result = await exjsb.run((err) => {console.log(err)}, "add", 5, 8, 10);
+console.log(result); //23
+
+//摧毀物件
+exjsb.destory();
+```
+
+``script.js``
 ```javascript
-import fs from "fs";
-const os = require("os");
+import fs from 'fs'; //沒問題.
+const os = require("os"); //沒問題.
+import { fileURLToPath } from  "node:url";
+import path, { dirname } from  "node:path";
+
+const __filename = fileURLToPath(import.meta.url);	//已被支援
+const __dirname = dirname(__filename);
+
+//匯出add這個函數.
+export function add(a, b, c){
+	console.log(__dirname);
+    console.log(fs);
+    console.log(os.cpus());
+    return a + b + c;
+}
+```
+
+## 向上兼容
+
+支援向上兼容舊版本exjsb，避免程式碼大改動
+
+``./index.js``
+```javascript
+import { ExJSB } from 'exjsb';
 import { fileURLToPath } from  "node:url";
 import path, { dirname } from  "node:path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-//程序主入口
-export function main(A, B, C){
-	console.log(A + " " + B + " " + C);	//Hi Hello javascript.
-	console.log(os.cpus);
-	console.log(fs.readFileSync(path.join(__dirname, "mybook.txt"), "utf-8");
+//創建一個ExJSB物件，並且開啟隔離模式
+const exjsb = new ExJSB(path.join(__dirname, "script.js"), true);
+
+//執行
+exjsb.execute((err)=>{console.log(err)}, 1, 2, 3);
+```
+
+``script.js``
+```javascript
+import fs from 'fs'; //沒問題.
+const os = require("os"); //沒問題.
+import { fileURLToPath } from  "node:url";
+import path, { dirname } from  "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+//入口只能是main，並且要注意export，且不支援return(也就是說如果有必要，只能使用回調函數).
+export function main(a, b, c){
+	console.log(__dirname);
+    console.log(fs);
+    console.log(os.cpus());
+    console.log(a + b + c);
 }
 ```
 
