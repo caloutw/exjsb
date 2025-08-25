@@ -113,8 +113,14 @@ export class ExJSB {
         let param = Array.from(arguments).slice(2, arguments.length);
         const execFunc = this.sendbox.namespace[funcName];
 
-        if (!execFunc)
-            throw new Error("Function name not exist.");
+        if (!execFunc){
+            if(typeof errorCallback !== "function")
+                throw new Error("Function name not exist.");
+            else
+                errorCallback("Function name not exist.");
+
+            return null;
+        }
         
         let result =  await errorLogger.run({
             code: "ExJSBError",
