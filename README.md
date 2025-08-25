@@ -51,7 +51,7 @@ let result = await exjsb.run((err) => {console.log(err)}, "add", 5, 8, 10);
 console.log(result); //23
 
 //remove the object
-exjsb.destory();
+exjsb.destroy();
 ```
 
 ``script.js``

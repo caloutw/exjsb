@@ -42,7 +42,7 @@ let result = await exjsb.run((err) => {console.log(err)}, "add", 5, 8, 10);
 console.log(result); //23
 
 //摧毀物件
-exjsb.destory();
+exjsb.destroy();
 ```
 
 ``script.js``

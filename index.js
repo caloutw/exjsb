@@ -133,7 +133,7 @@ export class ExJSB {
         return result ?? null;
     }
 
-    destory(){
+    destroy(){
         this.filepath = null;
         this.insulation = null;
         this.sendbox = null;
@@ -159,7 +159,7 @@ export class ExJSB {
             return await this.run(callback, "main", ...param);
         }
 
-        this.destory();
+        this.destroy();
 
         return true;
     }
