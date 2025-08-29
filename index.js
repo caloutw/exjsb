@@ -69,7 +69,7 @@ export class ExJSB {
         this.sendbox = new vm.SourceTextModule(vm_CODE, {
             context: context,
             identifier: this.filepath,
-            initializeImportMeta(meta) { meta.url = `file://${this.filepath}`; },
+            initializeImportMeta: (meta) => { meta.url = `file://${this.filepath}`; },
             importModuleDynamically(specifier) { return import(specifier); }
         });
 
