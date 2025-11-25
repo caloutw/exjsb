@@ -2,6 +2,7 @@ import vm from 'vm';
 import fs from 'fs';
 import { AsyncLocalStorage } from "node:async_hooks";
 import { createRequire } from "module";
+import path from 'node:path';
 
 //require.
 const require = createRequire(import.meta.url);
@@ -11,8 +12,9 @@ let errorLogger = new AsyncLocalStorage();
 const errorHandle = ["uncaughtException", "unhandledRejection"];
 for (let i of errorHandle) {
     const handler = (error) => {
-        const isVMError = errorLogger.getStore()?.code == "ExJSBError";
-        const errorCallback = errorLogger.getStore()?.callback;
+        const isVMError = (error.code == "ExJSBError" || errorLogger.getStore()?.code == "ExJSBError");
+        const errorCallback = errorLogger.getStore()?.callback || (typeof error.callback === "function" ? error.callback() : false);
+        
         if ((!isVMError || (isVMError && (errorCallback == undefined || typeof errorCallback !== 'function'))) && process.listenerCount(i) == 1) {
             console.error(error);
             process.exit(1);
@@ -36,18 +38,22 @@ export class ExJSB {
             throw new Error('filepath missing.');
 
         if (!fs.existsSync(filepath) || typeof filepath !== "string")
-            throw new Error('file not exist.');
+            throw new Error(`${filepath} not exist.`);
 
         if (typeof insulation !== 'boolean')
             insulation = true;
 
         this.filepath = filepath;
         this.insulation = insulation;
+        this.callback = undefined;
 
         this.sendbox = undefined;
     }
 
     async initialization(errorCallback) {
+        this.callback = errorCallback;
+        const getCallback = () => { return this.callback; };
+
         let cloneGlobal = () => {
             let cloned = Object.defineProperties(
                 { ...global },
@@ -57,6 +63,33 @@ export class ExJSB {
             if ('process' in cloned && this.insulation) {
                 delete cloned.process;
             }
+
+            // remake 'Error' class
+            const OriginalError = global.Error;
+            class SandboxedError extends OriginalError {
+                constructor(message) {
+                    super(message);
+                    Object.defineProperty(this, 'callback', {
+                        value: getCallback,
+                        writable: false,
+                        enumerable: false,
+                        configurable: false
+                    });
+
+                    Object.defineProperty(this, 'code', {
+                        value: "ExJSBError",
+                        writable: false,
+                        enumerable: false,
+                        configurable: false
+                    });
+
+                    if (OriginalError.captureStackTrace) {
+                        OriginalError.captureStackTrace(this, SandboxedError);
+                    }
+                }
+            }
+            cloned.Error = SandboxedError;
+
             // add 'require'
             cloned.require = require;
             return cloned;
@@ -70,7 +103,7 @@ export class ExJSB {
             context: context,
             identifier: this.filepath,
             initializeImportMeta: (meta) => { meta.url = `file://${this.filepath}`; },
-            importModuleDynamically(specifier) { return import(specifier); }
+            importModuleDynamically: (specifier) => { return import(specifier.startsWith(".") ? path.join(this.filepath, "..", specifier):specifier); }
         });
 
         let result = errorLogger.run({
@@ -78,7 +111,7 @@ export class ExJSB {
             callback: errorCallback
         }, async () => {
             await this.sendbox.link(async (specifier, referencingModule) => {
-                const target = await import(specifier);
+                const target = await import(specifier.startsWith(".") ? path.join(this.filepath, "..", specifier):specifier);
 
                 if (!target) return false;
 
@@ -100,7 +133,11 @@ export class ExJSB {
                 );
             });
 
-            await this.sendbox.evaluate();
+            try {
+                await this.sendbox.evaluate();
+            } catch(e) {
+                errorCallback(e);
+            }
 
             return true;
         });
@@ -109,6 +146,8 @@ export class ExJSB {
     }
 
     async run(errorCallback, funcName) {
+        this.callback = errorCallback;
+
         //get function parm arg
         let param = Array.from(arguments).slice(2, arguments.length);
         const execFunc = this.sendbox.namespace[funcName];
